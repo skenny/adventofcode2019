@@ -71,6 +71,8 @@ module.exports = class IntcodeComputer {
 
 	load(memoryString) {
 		this.memory = memoryString.trim().split(',').map(i => parseInt(i));
+		this.relativeBase = 0;
+		this.instrPtr = 0;
 	}
 
 	run(inputArgs) {
@@ -170,45 +172,45 @@ module.exports = class IntcodeComputer {
 		this.trace('memory is now ' + this.memory);
 	}
 
-	readParameter(param, mode) {
-		let paramValue;
+	getParamVal(param, mode) {
+		let paramVal;
 
 		switch (mode) {
 			case IntcodeComputer.PARAMETER_MODE_POSITION:
-				paramValue = this.read(param);
+				paramVal = this.read(param);
 				break;
 			case IntcodeComputer.PARAMETER_MODE_IMMEDIATE:
-				paramValue = param;
+				paramVal = param;
 				break;
 			case IntcodeComputer.PARAMETER_MODE_RELATIVE:
-				paramValue = this.read(param + this.relativeBase);
+				paramVal = this.read(param + this.relativeBase);
 				break;
 			default:
-				throw 'unexpected read parameter mode (' + mode + ')';
+				throw 'getParamVal() unexpected parameter mode (' + mode + ')';
 		}
 
-		this.trace('read parameter ' + param + ' in ' + this.describeParameterMode(mode) + ' mode is ' + paramValue);
+		this.trace('parameter ' + param + ' in ' + this.describeParameterMode(mode) + ' mode is value ' + paramVal);
 
-		return paramValue;
+		return paramVal;
 	}
 
-	writeParameter(param, mode) {
-		let writeAddress;
+	getParamAddr(param, mode) {
+		let paramAddr;
 
 		switch (mode) {
 			case IntcodeComputer.PARAMETER_MODE_POSITION:
-				writeAddress = param;
+				paramAddr = param;
 				break;
 			case IntcodeComputer.PARAMETER_MODE_RELATIVE:
-				writeAddress = param + this.relativeBase;
+				paramAddr = param + this.relativeBase;
 				break;
 			default:
-				throw 'unexpected write parameter mode (' + mode + ')';
+				throw 'getParamAddr() unexpected write parameter mode (' + mode + ')';
 		}
 
-		this.trace('write parameter ' + param + ' in ' + this.describeParameterMode(mode) + ' is address ' + writeAddress);
+		this.trace('parameter ' + param + ' in ' + this.describeParameterMode(mode) + ' mode is address ' + paramAddr);
 
-		return writeAddress;
+		return paramAddr;
 	}
 
 	instrAdd(instrPtr, parameterModes) {
@@ -218,14 +220,13 @@ module.exports = class IntcodeComputer {
 		let p2 = this.read(instrPtr + 2);
 		let p3 = this.read(instrPtr + 3);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
-		let p3a = this.writeParameter(p3, parameterModes[2]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
+		let p3a = this.getParamAddr(p3, parameterModes[2]);
 
 		const result = p1a + p2a;
 
 		this.trace('instruction: add, [' + p3a + '] = ' + p1a + ' + ' + p2a);
-
 		this.write(p3a, result);
 
 		return 4;
@@ -238,9 +239,9 @@ module.exports = class IntcodeComputer {
 		let p2 = this.read(instrPtr + 2);
 		let p3 = this.read(instrPtr + 3);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
-		let p3a = this.writeParameter(p3, parameterModes[2]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
+		let p3a = this.getParamAddr(p3, parameterModes[2]);
 
 		this.trace('instruction: multiply, [' + p3a + '] = ' + p1a + ' * ' + p2a);
 		this.write(p3a, p1a * p2a);
@@ -259,7 +260,7 @@ module.exports = class IntcodeComputer {
 		let inputValue = this.input.shift();
 		let p1 = this.read(instrPtr + 1);
 
-		let p1a = this.writeParameter(p1, parameterModes[0]);
+		let p1a = this.getParamAddr(p1, parameterModes[0]);
 
 		this.trace('instruction: input, save ' + inputValue + ' to [' + p1a + ']');
 		this.write(p1a, inputValue);
@@ -272,7 +273,7 @@ module.exports = class IntcodeComputer {
 		For example, the instruction 4,50 would output the value at address 50. */
 
 		let p1 = this.read(instrPtr + 1);
-		let p1a = this.readParameter(p1, parameterModes[0]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
 
 		this.trace('instruction: output, ' + p1a);
 		this.console(p1a);
@@ -294,8 +295,8 @@ module.exports = class IntcodeComputer {
 		let p1 = this.read(instrPtr + 1);
 		let p2 = this.read(instrPtr + 2);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
 
 		this.trace('instruction: jump to [' + p2a + '] if ' + p1a + ' != 0');
 		if (p1a != 0) {
@@ -315,8 +316,8 @@ module.exports = class IntcodeComputer {
 		let p1 = this.read(instrPtr + 1);
 		let p2 = this.read(instrPtr + 2);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
 
 		this.trace('instruction: jump to [' + p2a + '] if ' + p1a + ' == 0');
 		if (p1a === 0) {
@@ -335,9 +336,9 @@ module.exports = class IntcodeComputer {
 		let p2 = this.read(instrPtr + 2);
 		let p3 = this.read(instrPtr + 3);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
-		let p3a = this.writeParameter(p3, parameterModes[2]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
+		let p3a = this.getParamAddr(p3, parameterModes[2]);
 
 		const result = p1a < p2a ? 1 : 0;
 		this.trace('instruction: less than, [' + p3a + '] = ' + result + ' (' + p1a + ' < ' + p2a + ')');
@@ -355,9 +356,9 @@ module.exports = class IntcodeComputer {
 		let p2 = this.read(instrPtr + 2);
 		let p3 = this.read(instrPtr + 3);
 
-		let p1a = this.readParameter(p1, parameterModes[0]);
-		let p2a = this.readParameter(p2, parameterModes[1]);
-		let p3a = this.writeParameter(p3, parameterModes[2]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
+		let p2a = this.getParamVal(p2, parameterModes[1]);
+		let p3a = this.getParamAddr(p3, parameterModes[2]);
 
 		const result = p1a == p2a ? 1 : 0;
 		this.trace('instruction: equals, [' + p3a + '] = ' + p1a + ' == ' + p2a + '? ' + result);
@@ -371,7 +372,7 @@ module.exports = class IntcodeComputer {
 		The relative base increases (or decreases, if the value is negative) by the value of the parameter. */
 
 		let p1 = this.read(instrPtr + 1, 1);
-		let p1a = this.readParameter(p1, parameterModes[0]);
+		let p1a = this.getParamVal(p1, parameterModes[0]);
 
 		this.trace('instruction: relative mode offset, adjust by ' + p1a);
 		this.relativeBase += p1a;
