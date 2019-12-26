@@ -15,62 +15,14 @@ class Point {
         return this.x === otherPoint.x && this.y === otherPoint.y;
     }
 
-	manhattanDistance(otherPoint) {
+	manhattanDistanceTo(otherPoint) {
 		return Math.abs(this.x - otherPoint.x) + Math.abs(this.y - otherPoint.y);
 	}
 
     angleTo(otherPoint) {
-        const angle = atan2(this.y - otherPoint.y, otherPoint.x - this.x) * 180 / Math.PI;
-        console.log('angle from ' + this.toString() + ' to ' + otherPoint.toString() + ' is ' + angle);
+        const angle = Math.atan2(this.y - otherPoint.y, otherPoint.x - this.x) * 180 / Math.PI;
+        //console.log('angle from ' + this.toString() + ' to ' + otherPoint.toString() + ' is ' + angle);
         return angle;
-    }
-
-}
-
-class LineSegment {
-
-    constructor(p1, p2) {
-        this.p1 = p1;
-        this.p2 = p2;
-        this.distance = this.calculateDistance();
-        this.slope = this.calculateSlope();
-        this.yOffset = this.calculateYOffset();
-    }
-
-	isHorizontal() { return this.p1.y === this.p2.y; }
-	isVertical() { return this.p1.x === this.p2.x; }
-
-    calculateDistance() {
-        //return Math.sqrt(Math.pow(this.p1.x - this.p2.x, 2) + Math.pow(this.p1.y - this.p2.y, 2));
-        return Math.abs(this.p1.x - this.p2.x) + Math.abs(this.p1.y - this.p2.y);
-    }
-
-    calculateSlope() {
-        return (this.p2.y - this.p1.y) / (this.p2.x - this.p1.x);
-    }
-
-    calculateYOffset() {
-        return this.p1.y - (this.calculateSlope() * this.p1.x);
-    }
-
-    intersectsPoint(point) {
-        if (point.equals(this.p1) || point.equals(this.p2)) {
-            return true;
-        }
-
-        let minX = Math.min(this.p1.x, this.p2.x);
-        let maxX = Math.max(this.p1.x, this.p2.x);
-        let minY = Math.min(this.p1.y, this.p2.y);
-        let maxY = Math.max(this.p1.y, this.p2.y);
-        let intersects = minX <= point.x && point.x <= maxX && minY <= point.y && point.y <= maxY;
-
-        if (intersects && !this.isHorizontal() && !this.isVertical()) {
-            const y = this.slope * point.x + this.yOffset;
-            intersects = y == point.y;    
-        }
-
-        //console.log(this.p1.toString() + ' to ' + this.p2.toString() + ' vs ' + point.toString() + (intersects ? '; intersects' : ''));
-        return intersects;
     }
 
 }
@@ -95,8 +47,8 @@ const findAsteroidPoints = (grid) => {
 const countAsteroidsFromPoint = (point, otherAsteroidPoints) => {
     let visibleAsteroids = [];
     otherAsteroidPoints.forEach(asteroidPoint => {
-        let line = new LineSegment(point, asteroidPoint);
-        let inLineAsteroids = otherAsteroidPoints.filter(p => line.intersectsPoint(p));
+        let angle = point.angleTo(asteroidPoint);
+        let inLineAsteroids = otherAsteroidPoints.filter(p => point.angleTo(p) == angle); //line.intersectsPoint(p));
         let visibleAsteroid = findClosestAsteroidPoint(point, inLineAsteroids);
         //console.log('asteroid point', point.toString(), 'to', asteroidPoint.toString(), 'sees asteroid at', inLineAsteroids.toString());
         if (!visibleAsteroids.some(vp => vp == visibleAsteroid)) {
@@ -105,7 +57,7 @@ const countAsteroidsFromPoint = (point, otherAsteroidPoints) => {
     });
 
     let count = visibleAsteroids.length;
-    console.log(point, 'has ' + count + ' visible asteroids'); //:' + visibleAsteroids);
+    //console.log(point, 'has ' + count + ' visible asteroids'); //:' + visibleAsteroids);
     return count;
 }
 
@@ -116,7 +68,7 @@ const findClosestAsteroidPoint = (point, inLineAsteroids) => {
     //console.log('findBlockingAsteroid', point, inLineAsteroids);
 
     inLineAsteroids.forEach(asteroid => {
-        let asteroidDistance = new LineSegment(asteroid, point).distance;
+        let asteroidDistance = point.manhattanDistanceTo(asteroid);
         if (asteroidDistance < minDistance) {
             minDistance = asteroidDistance;
             blockingAsteroid = asteroid;
@@ -152,7 +104,6 @@ scanAsteroidField = (filename) => {
 
 const test = () => {
     const formatResult = (r, expectedPoint) => 'best point is ' + expectedPoint.toString() + '? ' + r.point.equals(expectedPoint) + '; got ' + r.point.toString() + ' with ' + r.asteroidCount;
-
     console.log('test 1', formatResult(scanAsteroidField('day10-input-test1'), new Point(3,4)));
     console.log('test 2', formatResult(scanAsteroidField('day10-input-test2'), new Point(5,8)));
     console.log('test 3', formatResult(scanAsteroidField('day10-input-test3'), new Point(1,2)));
@@ -160,4 +111,9 @@ const test = () => {
     console.log('test 5', formatResult(scanAsteroidField('day10-input-test5'), new Point(11,13)));
 }
 
+const dailyProblems = () => {
+    console.log(1, scanAsteroidField('day10-input'));
+}
+
 test();
+dailyProblems();
