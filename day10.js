@@ -20,14 +20,12 @@ class Point {
 	}
 
     angleTo(otherPoint) {
-        const angle = Math.atan2(this.y - otherPoint.y, otherPoint.x - this.x) * 180 / Math.PI;
-        //console.log('angle from ' + this.toString() + ' to ' + otherPoint.toString() + ' is ' + angle);
-        return angle;
+        return Math.atan2(this.y - otherPoint.y, otherPoint.x - this.x) * 180 / Math.PI;
     }
 
 }
 
-const findAsteroidPoints = (grid) => {
+const findAsteroids = (grid) => {
     const rows = grid.split('\n');
     const asteroid = '#';
     const points = [];
@@ -44,24 +42,25 @@ const findAsteroidPoints = (grid) => {
     return points;
 }
 
-const countAsteroidsFromPoint = (point, otherAsteroidPoints) => {
+const findAsteroidsAtAngle = (asteroidPoints, point, angle) => {
+    return asteroidPoints.filter(p => point.angleTo(p) == angle);
+}
+
+const findVisibleAsteroids = (point, otherAsteroidPoints) => {
     let visibleAsteroids = [];
     otherAsteroidPoints.forEach(asteroidPoint => {
         let angle = point.angleTo(asteroidPoint);
-        let inLineAsteroids = otherAsteroidPoints.filter(p => point.angleTo(p) == angle); //line.intersectsPoint(p));
-        let visibleAsteroid = findClosestAsteroidPoint(point, inLineAsteroids);
+        let inLineAsteroids = findAsteroidsAtAngle(otherAsteroidPoints, point, angle);
+        let visibleAsteroid = findClosestAsteroid(point, inLineAsteroids);
         //console.log('asteroid point', point.toString(), 'to', asteroidPoint.toString(), 'sees asteroid at', inLineAsteroids.toString());
-        if (!visibleAsteroids.some(vp => vp == visibleAsteroid)) {
-            visibleAsteroids.push(visibleAsteroid);
+        if (!visibleAsteroids.some(i => i.asteroid == visibleAsteroid)) {
+            visibleAsteroids.push({ asteroid: visibleAsteroid, angle: angle });
         }
     });
-
-    let count = visibleAsteroids.length;
-    //console.log(point, 'has ' + count + ' visible asteroids'); //:' + visibleAsteroids);
-    return count;
+    return visibleAsteroids;
 }
 
-const findClosestAsteroidPoint = (point, inLineAsteroids) => {
+const findClosestAsteroid = (point, inLineAsteroids) => {
     let minDistance = Number.MAX_SAFE_INTEGER;
     let blockingAsteroid = null;
 
@@ -82,14 +81,16 @@ const findClosestAsteroidPoint = (point, inLineAsteroids) => {
 
 scanAsteroidField = (filename) => {
     const input = fs.readFileSync(filename).toString().trim();
+    return findAsteroids(input);
+}
 
-    const asteroidField = findAsteroidPoints(input);
+determineBaseLocation = (asteroidField) => {
     let bestPoint = null;
     let mostAsteroids = Number.MIN_SAFE_INTEGER;
 
     asteroidField.forEach(point => {
         let otherAsteroidPoints = asteroidField.filter(i => i !== point);
-        let numVisibleAsteroids = countAsteroidsFromPoint(point, otherAsteroidPoints);
+        let numVisibleAsteroids = findVisibleAsteroids(point, otherAsteroidPoints).length;
         if (numVisibleAsteroids > mostAsteroids) {
             mostAsteroids = numVisibleAsteroids;
             bestPoint = point;
@@ -102,17 +103,22 @@ scanAsteroidField = (filename) => {
     };
 }
 
+vaporizeAsteroids = (asteroidField, n) => {
+
+}
+
 const test = () => {
     const formatResult = (r, expectedPoint) => 'best point is ' + expectedPoint.toString() + '? ' + r.point.equals(expectedPoint) + '; got ' + r.point.toString() + ' with ' + r.asteroidCount;
-    console.log('test 1', formatResult(scanAsteroidField('day10-input-test1'), new Point(3,4)));
-    console.log('test 2', formatResult(scanAsteroidField('day10-input-test2'), new Point(5,8)));
-    console.log('test 3', formatResult(scanAsteroidField('day10-input-test3'), new Point(1,2)));
-    console.log('test 4', formatResult(scanAsteroidField('day10-input-test4'), new Point(6,3)));
-    console.log('test 5', formatResult(scanAsteroidField('day10-input-test5'), new Point(11,13)));
+    console.log('test 1', formatResult(determineBaseLocation(scanAsteroidField('day10-input-test1')), new Point(3,4)));
+    console.log('test 2', formatResult(determineBaseLocation(scanAsteroidField('day10-input-test2')), new Point(5,8)));
+    console.log('test 3', formatResult(determineBaseLocation(scanAsteroidField('day10-input-test3')), new Point(1,2)));
+    console.log('test 4', formatResult(determineBaseLocation(scanAsteroidField('day10-input-test4')), new Point(6,3)));
+    console.log('test 5', formatResult(determineBaseLocation(scanAsteroidField('day10-input-test5')), new Point(11,13)));
 }
 
 const dailyProblems = () => {
-    console.log(1, scanAsteroidField('day10-input'));
+    console.log(1, determineBaseLocation(scanAsteroidField('day10-input')));
+    console.log(2, vaporizeAsteroids(scanAsteroidField('day10-input'), 200));
 }
 
 test();
