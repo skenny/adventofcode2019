@@ -48,18 +48,6 @@ module.exports = class IntcodeComputer {
 		}
 	}
 
-	pause() {
-		this.debug('pausing...');
-		this.paused = true;
-	}
-
-	resume(input) {
-		this.input = input;
-		this.debug('resuming...');
-		this.debug('input: ' + this.input);
-		this.paused = false;
-	}
-
 	dumpMemory() {
 		return this.memory;
 	}
@@ -116,7 +104,7 @@ module.exports = class IntcodeComputer {
 					this.instrPtr += this.instrMultiply(this.instrPtr, parameterModes);
 					break;
 				case IntcodeComputer.OPCODE_INPUT:
-					if (this.input.length === 0 && this.pauseForInput) {
+					if ((!this.input || this.input.length === 0) && this.pauseForInput) {
 						this.debug('pause for input');
 						this.paused = true;
 						halt = true;
