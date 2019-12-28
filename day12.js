@@ -35,37 +35,29 @@ class Moon {
     }
 
     applyGravity(otherMoon) {
-        //console.log('applying gravity between', this.name, 'and', otherMoon.name);
+        this.applyGravityOnAxis('x', otherMoon);
+        this.applyGravityOnAxis('y', otherMoon);
+        this.applyGravityOnAxis('z', otherMoon);
+    }
 
-        if (otherMoon.pos.x > this.pos.x) {
-            this.vel.x += 1;
-            otherMoon.vel.x -= 1;
-        } else if (otherMoon.pos.x < this.pos.x) {
-            this.vel.x -= 1;
-            otherMoon.vel.x += 1;
-        }
-    
-        if (otherMoon.pos.y > this.pos.y) {
-            this.vel.y += 1;
-            otherMoon.vel.y -= 1;
-        } else if (otherMoon.pos.y < this.pos.y) {
-            this.vel.y -= 1;
-            otherMoon.vel.y += 1;
-        }
-    
-        if (otherMoon.pos.z > this.pos.z) {
-            this.vel.z += 1;
-            otherMoon.vel.z -= 1;
-        } else if (otherMoon.pos.z < this.pos.z) {
-            this.vel.z -= 1;
-            otherMoon.vel.z += 1;
+    applyGravityOnAxis(axis, otherMoon) {
+        if (otherMoon.pos[axis] > this.pos[axis]) {
+            this.vel[axis] += 1;
+            otherMoon.vel[axis] -= 1;
+        } else if (otherMoon.pos[axis] < this.pos[axis]) {
+            this.vel[axis] -= 1;
+            otherMoon.vel[axis] += 1;
         }
     }
 
     applyVelocity() {
-        this.pos.x += this.vel.x;
-        this.pos.y += this.vel.y;
-        this.pos.z += this.vel.z;
+        this.applyVelocityOnAxis('x');
+        this.applyVelocityOnAxis('y');
+        this.applyVelocityOnAxis('z');
+    }
+
+    applyVelocityOnAxis(axis) {
+        this.pos[axis] += this.vel[axis];
     }
 
     calculateTotalEnergy() {
