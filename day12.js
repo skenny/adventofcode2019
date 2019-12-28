@@ -4,6 +4,12 @@ class Vector {
     y = 0;
     z = 0;
 
+    constructor(x, y, z) {
+        this.x = x || 0;
+        this.y = y || 0;
+        this.z = z || 0;
+    }
+
     toString() {
         return '<x=' + this.fn(this.x) + ', y=' + this.fn(this.y) + ', z=' + this.fn(this.z) + '>';
     }
@@ -15,19 +21,19 @@ class Vector {
     fn(n) {
         return n.toString().padStart(3, ' ');
     }
+
 }
 
 class Moon {
 
     name;
-    pos = new Vector();
-    vel = new Vector();
+    pos;
+    vel;
 
     constructor(name, x, y, z) {
         this.name = name;
-        this.pos.x = x;
-        this.pos.y = y;
-        this.pos.z = z;
+        this.pos = new Vector(x, y, z);
+        this.vel = new Vector(0, 0, 0);
     }
 
     toString() {
@@ -63,6 +69,25 @@ class Moon {
     calculateTotalEnergy() {
         return this.pos.absSum() * this.vel.absSum();
     }
+
+}
+
+const gcd = (n1, n2) => {
+    if (n1 == 0 || n2 == 0) {
+        return n1 + n2;
+    }
+    const an1 = Math.abs(n1);
+    const an2 = Math.abs(n2);
+    const min = Math.min(an1, an2);
+    const max = Math.max(an1, an2);
+    return gcd(max % min, min);
+}
+
+const lcm = (n1, n2) => {
+    if (n1 == 0 || n2 == 0) {
+        return 0;
+    }
+    return Math.abs(n1 * n2) / gcd(n1, n2);
 }
 
 const timeStep = (moons) => {
@@ -74,6 +99,38 @@ const timeStep = (moons) => {
     moons.forEach(moon => moon.applyVelocity());
 }
 
+const determineAxisPeriod = (moons, axis) => {
+    let posI = moons.map(moon => moon.pos[axis]);
+    let velI = moons.map(moon => moon.vel[axis]);
+
+    let steps = 0;
+    while (true) {
+        for (let i = 0; i < moons.length - 1; i++) {
+            for (let j = i + 1; j < moons.length; j++) {
+                moons[i].applyGravityOnAxis(axis, moons[j]);
+            }
+        }
+
+        moons.forEach(moon => moon.applyVelocityOnAxis(axis));
+
+        steps++;
+
+        let match = moons.reduce((r, moon, idx) => r = r && moon.pos[axis] == posI[idx] && moon.vel[axis] == velI[idx], true);
+        if (match) {
+            break;
+        }
+    }
+
+    return steps;
+}
+
+const determineSystemPeriod = (moons) => {
+    const axisPeriods = ['x', 'y', 'z'].map(axis => determineAxisPeriod(moons, axis));
+    const systemPeriod = axisPeriods.reduce(lcm, 1);
+    console.log('axis periods are', axisPeriods, 'system period is', systemPeriod);
+    return systemPeriod;
+}
+
 const calculateSystemEnergy = (moons) => {
     return moons.reduce((e, m) => e += m.calculateTotalEnergy(), 0);
 }
@@ -82,7 +139,6 @@ const run = (moons, steps) => {
     console.log('--- initial state, ' + calculateSystemEnergy(moons) + ' energy --- \n', formatMoons(moons));
     for (let i = 0; i < steps; i++) {
         timeStep(moons);
-        //console.log(f'step', i, calculateSystemEnergy(moons) + '\n', formatMoons(moons));
     }
     const finalSystemEnergy = calculateSystemEnergy(moons);
     console.log('--- ' + steps + ' steps, ' + finalSystemEnergy + ' energy --- \n', formatMoons(moons));
@@ -110,16 +166,39 @@ const test = () => {
             new Moon('Callisto', 9, -8, -3)
         ], 100) == 1940
     );
+    console.log(
+        'test3?',
+        determineSystemPeriod([
+            new Moon('Io', -1, 0, 2),
+            new Moon('Europa', 2, -10, -7),
+            new Moon('Ganymede', 4, -8, 8),
+            new Moon('Callisto', 3, 5, -1)
+        ]) == 2772
+    );
+    console.log(
+        'test4?',
+        determineSystemPeriod([
+            new Moon('Io', -8, -10, 0),
+            new Moon('Europa', 5, 5, 10),
+            new Moon('Ganymede', 2, -7, 3),
+            new Moon('Callisto', 9, -8, -3)
+        ]) == 4686774924
+    )
 }
 
 const dailyProblems = () => {
-    const moons = [
+    console.log(1, run([
         new Moon('Io', -1, -4, 0),
         new Moon('Europa', 4, 7, -1),
         new Moon('Ganymede', -14, -10, 9),
         new Moon('Callisto', 1, 2, 17)
-    ];
-    console.log(1, run(moons, 1000));
+    ], 1000));
+    console.log(2, determineSystemPeriod([
+        new Moon('Io', -1, -4, 0),
+        new Moon('Europa', 4, 7, -1),
+        new Moon('Ganymede', -14, -10, 9),
+        new Moon('Callisto', 1, 2, 17)
+    ]));
 }
 
 test();
