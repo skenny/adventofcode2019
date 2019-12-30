@@ -8,26 +8,39 @@ class ArcadeCabinet {
     static PADDLE_TILE = 3; // The paddle is indestructible.
     static BALL_TILE = 4;   // The ball moves diagonally and bounces off objects.
 
-    computer = new IntcodeComputer();
-    tiles = new Map();
-    score = 0;
+    programFile;
+    computer;
+    tiles;
+    score;
+    paddleX;
+    ballX;
 
     constructor(programFile) {
-        this.computer.loadFile(programFile);
+        this.programFile = programFile;
+        this.reset();
+    }
+
+    reset() {
+        this.computer = new IntcodeComputer();
+        this.computer.loadFile(this.programFile);
         this.computer.enablePauseForInput();
+        this.score = 0;
+        this.paddleX = 0;
+        this.ballX = 0;
+        this.tiles = new Map();
     }
 
     play() {
+        this.reset();
+
         // insert two quarters
         this.computer.write(0, 2);
 
-        let input = [];
         while (true) {
-            const blockTilesDrawn = this.runComputer(input);
-            if (blockTilesDrawn === 0 || !this.computer.paused) {
+            const blocksRemaining = this.step(this.readInput());
+            if (blocksRemaining === 0 || !this.computer.paused) {
                 break;
             }
-            input = this.readInput();
         }
 
         return this.score;
@@ -43,7 +56,7 @@ class ArcadeCabinet {
         return [0];
     }
 
-    runComputer(input) { 
+    step(input) { 
         let outputBuffer = [];
 
         this.computer.setOutputCallback(o => {
@@ -63,10 +76,10 @@ class ArcadeCabinet {
         });
 
         this.computer.run(input);
-        return this.drawScreen();
+        return this.update();
     }
 
-    drawScreen() {
+    update() {
         let w = Number.MIN_SAFE_INTEGER;
         let h = Number.MIN_SAFE_INTEGER;
         for (const p of this.tiles.keys()) {
@@ -100,7 +113,7 @@ class ArcadeCabinet {
                         raster += 'o';
                         break;
                     default:
-                        throw 'unexpected tile type: ' + tileType + ' at position ' + x + ',' + y;
+                        throw 'unexpected tile ' + tileType + ' at position ' + x + ', ' + y;
                 }
             }
             raster += '\n';
@@ -108,6 +121,7 @@ class ArcadeCabinet {
 
         console.clear();
         console.log(raster);
+        
         return blockTilesDrawn;
     }
 
@@ -115,7 +129,7 @@ class ArcadeCabinet {
 
 p1 = () => {
     const cabinet = new ArcadeCabinet('day13-input');
-    console.log(1, cabinet.runComputer());
+    console.log(1, cabinet.step());
 }
 
 p2 = () => {
