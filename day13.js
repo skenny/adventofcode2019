@@ -8,10 +8,62 @@ class ArcadeCabinet {
     static PADDLE_TILE = 3; // The paddle is indestructible.
     static BALL_TILE = 4;   // The ball moves diagonally and bounces off objects.
 
+    computer = new IntcodeComputer();
     tiles = new Map();
+    score = 0;
 
-    fillTile(x, y, tileType) {
-        this.tiles.set(x + ',' + y, tileType);
+    constructor(programFile) {
+        this.computer.loadFile(programFile);
+        this.computer.enablePauseForInput();
+    }
+
+    play() {
+        // insert two quarters
+        this.computer.write(0, 2);
+
+        let input = [];
+        while (true) {
+            const blockTilesDrawn = this.runComputer(input);
+            if (blockTilesDrawn === 0 || !this.computer.paused) {
+                break;
+            }
+            input = this.readInput();
+        }
+
+        return this.score;
+    }
+
+    readInput() {
+        if (this.paddleX < this.ballX) {
+            return [1];
+        } 
+        if (this.paddleX > this.ballX) {
+            return [-1];
+        }
+        return [0];
+    }
+
+    runComputer(input) { 
+        let outputBuffer = [];
+
+        this.computer.setOutputCallback(o => {
+            outputBuffer.push(o);
+
+            if (outputBuffer.length === 3) {
+                const x = outputBuffer.shift();
+                const y = outputBuffer.shift();
+                const value = outputBuffer.shift();
+
+                if (x === -1 && y === 0) {
+                    this.score = value;
+                } else {
+                    this.tiles.set(x + ',' + y, value);
+                }
+            }
+        });
+
+        this.computer.run(input);
+        return this.drawScreen();
     }
 
     drawScreen() {
@@ -23,8 +75,8 @@ class ArcadeCabinet {
             h = Math.max(h, parseInt(point[1]));
         }
 
-        let blockTiles = 0;
-        let raster = '';
+        let blockTilesDrawn = 0;
+        let raster = 'Score: ' + this.score + '\n';
         for (let y = 0; y <= h; y++) {
             for (let x = 0; x <= w; x++) {
                 const tileType = this.tiles.get(x + ',' + y) || 0;
@@ -36,13 +88,15 @@ class ArcadeCabinet {
                         raster += '=';
                         break;
                     case ArcadeCabinet.BLOCK_TILE:
-                        blockTiles += 1;
+                        blockTilesDrawn += 1;
                         raster += '#';
                         break;
                     case ArcadeCabinet.PADDLE_TILE:
+                        this.paddleX = x;
                         raster += '-';
                         break;
                     case ArcadeCabinet.BALL_TILE:
+                        this.ballX = x;
                         raster += 'o';
                         break;
                     default:
@@ -52,27 +106,22 @@ class ArcadeCabinet {
             raster += '\n';
         }
 
+        console.clear();
         console.log(raster);
-        return blockTiles;
+        return blockTilesDrawn;
     }
 
 }
 
-dailyProblems = () => {
-    const cabinet = new ArcadeCabinet();
-    const computer = new IntcodeComputer();
-
-    let output = [];
-    computer.loadFile('day13-input');
-    //computer.setOutputLevel(IntcodeComputer.OUTPUT_LEVEL_CONSOLE);
-    computer.setOutputCallback(o => output.push(o));
-    computer.run();
-
-    for (let t = 0; t < output.length; t += 3) {
-        cabinet.fillTile(output[t], output[t + 1], output[t + 2]);
-    }
-    let blockTiles = cabinet.drawScreen();
-    console.log(1, blockTiles);
+p1 = () => {
+    const cabinet = new ArcadeCabinet('day13-input');
+    console.log(1, cabinet.runComputer());
 }
 
-dailyProblems();
+p2 = () => {
+    const cabinet = new ArcadeCabinet('day13-input');
+    console.log(2, cabinet.play());
+}
+
+//p1();
+p2();
